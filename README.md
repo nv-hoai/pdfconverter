@@ -493,7 +493,7 @@ Dự án này được phát hành dưới [MIT License](LICENSE).
 
 ## 👨‍💻 Tác giả
 
-**Đại học Duy Tân (DUT)**  
+**Đại học Bách khoa Đà nẵng (DUT)**  
 Email: support@dut.udn.vn
 
 ---
