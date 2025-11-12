@@ -1,4 +1,4 @@
-package edu.dut.model;
+package edu.dut.model.bean;
 
 public class ConversionResult {
     private boolean success;

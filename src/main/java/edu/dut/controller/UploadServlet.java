@@ -1,7 +1,8 @@
 package edu.dut.controller;
 
-import edu.dut.model.ConversionResult;
-import edu.dut.service.WordToPdfConverter;
+import edu.dut.model.bean.ConversionResult;
+import edu.dut.model.bean.UploadedFile;
+import edu.dut.model.bo.ConversionBO;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -25,6 +26,14 @@ public class UploadServlet extends HttpServlet {
     private static final String UPLOAD_DIR = "uploads";
     private static final String OUTPUT_DIR = "outputs";
     
+    private ConversionBO conversionBO;
+    
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        conversionBO = new ConversionBO();
+    }
+    
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -43,59 +52,35 @@ public class UploadServlet extends HttpServlet {
         }
         
         String fileName = getFileName(filePart);
-        
-        // Check if file is Word document
-        if (!fileName.toLowerCase().endsWith(".docx") && !fileName.toLowerCase().endsWith(".doc")) {
-            ConversionResult result = new ConversionResult(false, "Chỉ chấp nhận file Word (.doc hoặc .docx)!");
-            request.setAttribute("result", result);
-            request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
-            return;
-        }
+        long fileSize = filePart.getSize();
         
         try {
-            // Create upload and output directories if they don't exist
+            // Get paths
             String applicationPath = getServletContext().getRealPath("");
             String uploadPath = applicationPath + File.separator + UPLOAD_DIR;
             String outputPath = applicationPath + File.separator + OUTPUT_DIR;
             
-            File uploadDir = new File(uploadPath);
-            if (!uploadDir.exists()) {
-                uploadDir.mkdirs();
-            }
+            // Ensure directories exist
+            conversionBO.ensureDirectoryExists(uploadPath);
+            conversionBO.ensureDirectoryExists(outputPath);
             
-            File outputDir = new File(outputPath);
-            if (!outputDir.exists()) {
-                outputDir.mkdirs();
-            }
-            
-            // Save uploaded file
-            String timestamp = String.valueOf(System.currentTimeMillis());
-            String uploadedFileName = timestamp + "_" + fileName;
-            File uploadedFile = new File(uploadPath + File.separator + uploadedFileName);
-            
+            // Process upload via BO
             InputStream inputStream = filePart.getInputStream();
-            java.nio.file.Files.copy(inputStream, uploadedFile.toPath(), 
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            UploadedFile uploadedFile = conversionBO.processUpload(inputStream, fileName, fileSize, uploadPath);
             inputStream.close();
             
-            // Convert to PDF
-            String pdfFileName = uploadedFileName.substring(0, uploadedFileName.lastIndexOf('.')) + ".pdf";
-            File pdfFile = new File(outputPath + File.separator + pdfFileName);
-            
-            WordToPdfConverter.convert(uploadedFile, pdfFile);
-            
-            // Delete uploaded Word file
-            uploadedFile.delete();
-            
-            // Set result
-            ConversionResult result = new ConversionResult(true, 
-                "Chuyển đổi thành công! File: " + fileName, pdfFileName);
+            // Convert to PDF via BO
+            ConversionResult result = conversionBO.convertToPdf(uploadedFile, outputPath);
             request.setAttribute("result", result);
             
+        } catch (IllegalArgumentException e) {
+            // Validation error
+            ConversionResult result = new ConversionResult(false, e.getMessage());
+            request.setAttribute("result", result);
         } catch (Exception e) {
             e.printStackTrace();
             ConversionResult result = new ConversionResult(false, 
-                "Lỗi khi chuyển đổi file: " + e.getMessage());
+                "Lỗi không xác định: " + e.getMessage());
             request.setAttribute("result", result);
         }
         
