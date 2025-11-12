@@ -15,4 +15,15 @@
         <session-timeout>30</session-timeout>
     </session-config>
     
+    <!-- Giới hạn kích thước upload: 20MB cho file, 25MB cho request -->
+    <servlet>
+        <servlet-name>UploadServlet</servlet-name>
+        <servlet-class>edu.dut.controller.UploadServlet</servlet-class>
+        <multipart-config>
+            <max-file-size>20971520</max-file-size> <!-- 20MB -->
+            <max-request-size>26214400</max-request-size> <!-- 25MB -->
+            <file-size-threshold>1048576</file-size-threshold> <!-- 1MB -->
+        </multipart-config>
+    </servlet>
+    
 </web-app>

@@ -1,276 +1,412 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page import="edu.dut.model.bean.User" %>
+<%
+    User user = (User) session.getAttribute("user");
+    if (user == null) {
+        response.sendRedirect(request.getContextPath() + "/login");
+        return;
+    }
+%>
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chuyển đổi Word sang PDF</title>
+    <title>Upload File - Word to PDF Converter</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+        }
+
+        .user-icon {
+            width: 32px;
+            height: 32px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-results {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-results:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-logout {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 40px 20px;
         }
-        
-        .container {
+
+        .upload-card {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 40px;
             max-width: 600px;
             width: 100%;
         }
-        
+
         h1 {
             color: #333;
             text-align: center;
             margin-bottom: 10px;
-            font-size: 28px;
+            font-size: 2rem;
         }
-        
+
         .subtitle {
             text-align: center;
             color: #666;
             margin-bottom: 30px;
-            font-size: 14px;
+            font-size: 0.95rem;
         }
-        
+
         .upload-area {
-            border: 2px dashed #667eea;
-            border-radius: 10px;
-            padding: 40px;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
             text-align: center;
-            background: #f8f9ff;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        .upload-area:hover {
-            border-color: #764ba2;
-            background: #f0f1ff;
-        }
-        
-        .upload-icon {
-            font-size: 48px;
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .file-label {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #667eea;
-            color: white;
-            border-radius: 25px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-weight: 500;
+            background: #f8f9ff;
+            margin-bottom: 20px;
         }
-        
-        .file-label:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: scale(1.02);
         }
-        
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.05);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            background: #f0f2ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
         .file-name {
-            margin-top: 15px;
             color: #333;
             font-weight: 500;
+            word-break: break-all;
         }
-        
-        .submit-btn {
+
+        .btn-submit {
             width: 100%;
             padding: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            display: none;
         }
-        
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+
+        .btn-submit.show {
+            display: block;
         }
-        
-        .submit-btn:active {
-            transform: translateY(0);
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
         }
-        
-        .result {
-            margin-top: 25px;
-            padding: 20px;
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 15px;
             border-radius: 10px;
+            margin-bottom: 20px;
             text-align: center;
         }
-        
-        .result.success {
+
+        .message.success {
             background: #d4edda;
-            border: 1px solid #c3e6cb;
             color: #155724;
+            border: 1px solid #c3e6cb;
         }
-        
-        .result.error {
+
+        .message.error {
             background: #f8d7da;
-            border: 1px solid #f5c6cb;
             color: #721c24;
+            border: 1px solid #f5c6cb;
         }
-        
-        .result-icon {
-            font-size: 40px;
-            margin-bottom: 10px;
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
         }
-        
-        .result-message {
-            font-size: 16px;
-            margin-bottom: 15px;
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
         }
-        
-        .download-btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            margin-top: 10px;
+
+        .loading.show {
+            display: block;
         }
-        
-        .download-btn:hover {
-            background: #218838;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
         }
-        
-        .info-box {
-            background: #e7f3ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin-top: 25px;
-            border-radius: 5px;
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        
-        .info-box h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        
-        .info-box ul {
-            list-style: none;
-            color: #555;
-            font-size: 14px;
-            line-height: 1.8;
-        }
-        
-        .info-box li:before {
-            content: "✓ ";
-            color: #28a745;
-            font-weight: bold;
-            margin-right: 5px;
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .navbar-right {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .upload-card {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="navbar-brand">📄 Word to PDF Converter</div>
+        <div class="navbar-right">
+            <div class="user-info">
+                <div class="user-icon"><%= user.getFullName().substring(0, 1).toUpperCase() %></div>
+                <span><%= user.getFullName() %></span>
+            </div>
+            <a href="<%= request.getContextPath() %>/results" class="nav-btn btn-results">📋 Kết quả</a>
+            <form method="post" action="<%= request.getContextPath() %>/logout" style="display: inline;">
+                <button type="submit" class="nav-btn btn-logout">🚪 Đăng xuất</button>
+            </form>
+        </div>
+    </nav>
+
     <div class="container">
-        <h1>📄 Chuyển đổi Word sang PDF</h1>
-        <p class="subtitle">Chuyển đổi file Word (.doc, .docx) thành PDF dễ dàng - Tomcat 9</p>
-        
-        <form action="${pageContext.request.contextPath}/upload" method="post" 
-              enctype="multipart/form-data" id="uploadForm">
+        <div class="upload-card">
+            <h1>Upload File Word</h1>
+            <p class="subtitle">Gửi yêu cầu chuyển đổi file .doc hoặc .docx sang PDF</p>
             
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📁</div>
-                <label for="fileInput" class="file-label">Chọn file Word</label>
-                <input type="file" name="file" id="fileInput" class="file-input" 
-                       accept=".doc,.docx" required>
-                <div class="file-name" id="fileName"></div>
+            <div class="message info">
+                ℹ️ <strong>Giới hạn:</strong> File tối đa 20MB | Tối đa 50 yêu cầu/tài khoản | File tự động xóa sau 7 ngày
             </div>
-            
-            <button type="submit" class="submit-btn">Chuyển đổi sang PDF</button>
-        </form>
-        
-        <c:if test="${not empty result}">
-            <div class="result ${result.success ? 'success' : 'error'}">
-                <div class="result-icon">${result.success ? '✅' : '❌'}</div>
-                <div class="result-message">${result.message}</div>
-                <c:if test="${result.success && not empty result.downloadFileName}">
-                    <a href="${pageContext.request.contextPath}/download?file=${result.downloadFileName}" 
-                       class="download-btn">📥 Tải xuống PDF</a>
-                </c:if>
+
+            <% 
+            String message = (String) request.getAttribute("message");
+            String messageType = (String) request.getAttribute("messageType");
+            if (message != null && messageType != null) { 
+            %>
+                <div class="message <%= messageType %>">
+                    <%= message %>
+                </div>
+            <% } %>
+
+            <form method="post" action="<%= request.getContextPath() %>/upload" enctype="multipart/form-data" id="uploadForm">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">Kéo thả file vào đây</div>
+                    <div class="upload-hint">hoặc nhấn để chọn file (.doc, .docx)</div>
+                    <input type="file" name="file" id="fileInput" accept=".doc,.docx" required>
+                </div>
+
+                <div class="file-info" id="fileInfo">
+                    <strong>File đã chọn:</strong>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    🚀 Gửi yêu cầu chuyển đổi
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Đang gửi yêu cầu...</p>
             </div>
-        </c:if>
-        
-        <div class="info-box">
-            <h3>📋 Hướng dẫn sử dụng:</h3>
-            <ul>
-                <li>Chọn file Word (.doc hoặc .docx)</li>
-                <li>Nhấn nút "Chuyển đổi sang PDF"</li>
-                <li>Tải file PDF về máy</li>
-                <li>Kích thước tối đa: 10MB</li>
-            </ul>
         </div>
     </div>
-    
+
     <script>
         const fileInput = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
         const uploadArea = document.getElementById('uploadArea');
-        
+        const fileInfo = document.getElementById('fileInfo');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const loading = document.getElementById('loading');
+
+        uploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+
         fileInput.addEventListener('change', function(e) {
-            if (this.files && this.files[0]) {
-                fileName.textContent = '📎 ' + this.files[0].name;
-            } else {
-                fileName.textContent = '';
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                displayFileInfo(file);
             }
         });
-        
-        // Drag and drop support
+
         uploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
-            this.style.borderColor = '#764ba2';
-            this.style.background = '#f0f1ff';
+            uploadArea.classList.add('dragover');
         });
-        
-        uploadArea.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            this.style.borderColor = '#667eea';
-            this.style.background = '#f8f9ff';
+
+        uploadArea.addEventListener('dragleave', function() {
+            uploadArea.classList.remove('dragover');
         });
-        
+
         uploadArea.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.style.borderColor = '#667eea';
-            this.style.background = '#f8f9ff';
+            uploadArea.classList.remove('dragover');
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                fileInput.files = files;
-                fileName.textContent = '📎 ' + files[0].name;
+                const file = files[0];
+                if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+                    fileInput.files = files;
+                    displayFileInfo(file);
+                } else {
+                    alert('Vui lòng chọn file Word (.doc hoặc .docx)');
+                }
             }
+        });
+
+        function displayFileInfo(file) {
+            fileName.textContent = file.name;
+            fileInfo.classList.add('show');
+            submitBtn.classList.add('show');
+        }
+
+        uploadForm.addEventListener('submit', function(e) {
+            submitBtn.disabled = true;
+            loading.classList.add('show');
         });
     </script>
 </body>

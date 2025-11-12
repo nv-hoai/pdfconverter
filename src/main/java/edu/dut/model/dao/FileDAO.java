@@ -59,7 +59,7 @@ public class FileDAO {
     /**
      * Convert Word file to PDF file
      */
-    private void convertWordToPdf(File wordFile, File pdfFile) throws Exception {
+    public void convertWordToPdf(File wordFile, File pdfFile) throws Exception {
         FileInputStream fis = null;
         XWPFDocument document = null;
         OutputStream out = null;

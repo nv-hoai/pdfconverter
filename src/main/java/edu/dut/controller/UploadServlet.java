@@ -1,8 +1,7 @@
 package edu.dut.controller;
 
-import edu.dut.model.bean.ConversionResult;
-import edu.dut.model.bean.UploadedFile;
-import edu.dut.model.bo.ConversionBO;
+import edu.dut.model.bean.User;
+import edu.dut.model.bo.ConversionRequestBO;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -10,6 +9,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
 import java.io.File;
 import java.io.IOException;
@@ -17,26 +17,36 @@ import java.io.InputStream;
 
 @WebServlet("/upload")
 @MultipartConfig(
-    fileSizeThreshold = 1024 * 1024 * 2,  // 2MB
-    maxFileSize = 1024 * 1024 * 10,       // 10MB
-    maxRequestSize = 1024 * 1024 * 50     // 50MB
+    fileSizeThreshold = 1024 * 1024,      // 1MB
+    maxFileSize = 1024 * 1024 * 20,       // 20MB
+    maxRequestSize = 1024 * 1024 * 25     // 25MB
 )
 public class UploadServlet extends HttpServlet {
     
     private static final String UPLOAD_DIR = "uploads";
-    private static final String OUTPUT_DIR = "outputs";
+    private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+    private static final int MAX_REQUESTS_PER_USER = 50;
     
-    private ConversionBO conversionBO;
+    private ConversionRequestBO requestBO;
     
     @Override
     public void init() throws ServletException {
         super.init();
-        conversionBO = new ConversionBO();
+        requestBO = new ConversionRequestBO();
     }
     
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        // Check login
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        
+        User user = (User) session.getAttribute("user");
         
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
@@ -45,8 +55,7 @@ public class UploadServlet extends HttpServlet {
         Part filePart = request.getPart("file");
         
         if (filePart == null || filePart.getSize() == 0) {
-            ConversionResult result = new ConversionResult(false, "Vui lòng chọn file để upload!");
-            request.setAttribute("result", result);
+            request.setAttribute("error", "Vui lòng chọn file để upload!");
             request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
             return;
         }
@@ -54,34 +63,52 @@ public class UploadServlet extends HttpServlet {
         String fileName = getFileName(filePart);
         long fileSize = filePart.getSize();
         
+        // Validate file size
+        if (fileSize > MAX_FILE_SIZE) {
+            request.setAttribute("messageType", "error");
+            request.setAttribute("message", "File quá lớn! Kích thước tối đa: 20MB");
+            request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
+            return;
+        }
+        
+        // Validate file extension
+        if (!fileName.toLowerCase().endsWith(".doc") && !fileName.toLowerCase().endsWith(".docx")) {
+            request.setAttribute("messageType", "error");
+            request.setAttribute("message", "Chỉ hỗ trợ file Word (.doc, .docx)");
+            request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
+            return;
+        }
+        
         try {
+            // Check user's request limit
+            int userRequestCount = requestBO.countUserRequests(user.getUserId());
+            if (userRequestCount >= MAX_REQUESTS_PER_USER) {
+                request.setAttribute("messageType", "error");
+                request.setAttribute("message", "Bạn đã đạt giới hạn " + MAX_REQUESTS_PER_USER + " yêu cầu. Vui lòng xóa các yêu cầu cũ!");
+                request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
+                return;
+            }
+            
             // Get paths
             String applicationPath = getServletContext().getRealPath("");
             String uploadPath = applicationPath + File.separator + UPLOAD_DIR;
-            String outputPath = applicationPath + File.separator + OUTPUT_DIR;
             
-            // Ensure directories exist
-            conversionBO.ensureDirectoryExists(uploadPath);
-            conversionBO.ensureDirectoryExists(outputPath);
+            // Ensure directory exists
+            requestBO.ensureDirectoryExists(uploadPath);
             
-            // Process upload via BO
+            // Submit request to queue
             InputStream inputStream = filePart.getInputStream();
-            UploadedFile uploadedFile = conversionBO.processUpload(inputStream, fileName, fileSize, uploadPath);
+            int requestId = requestBO.submitRequest(user.getUserId(), inputStream, fileName, fileSize, uploadPath);
             inputStream.close();
             
-            // Convert to PDF via BO
-            ConversionResult result = conversionBO.convertToPdf(uploadedFile, outputPath);
-            request.setAttribute("result", result);
+            request.setAttribute("messageType", "success");
+            request.setAttribute("message", "Yêu cầu #" + requestId + " đã được gửi! Kiểm tra ở trang Kết quả.");
             
         } catch (IllegalArgumentException e) {
-            // Validation error
-            ConversionResult result = new ConversionResult(false, e.getMessage());
-            request.setAttribute("result", result);
+            request.setAttribute("error", e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            ConversionResult result = new ConversionResult(false, 
-                "Lỗi không xác định: " + e.getMessage());
-            request.setAttribute("result", result);
+            request.setAttribute("error", "Lỗi không xác định: " + e.getMessage());
         }
         
         request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
@@ -90,6 +117,14 @@ public class UploadServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        // Check login
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("user") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        
         request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
     }
     
