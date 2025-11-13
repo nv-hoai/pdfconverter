@@ -1,5 +1,6 @@
 package edu.dut.service;
 
+import edu.dut.distributed.master.WorkerManager;
 import edu.dut.model.bean.ConversionRequest;
 import edu.dut.model.dao.ConversionRequestDAO;
 import edu.dut.model.dao.FileDAO;
@@ -17,6 +18,7 @@ public class ConversionQueueProcessor implements ServletContextListener {
     private volatile boolean running = false;
     private ConversionRequestDAO requestDAO;
     private FileDAO fileDAO;
+    private WorkerManager workerManager;
     private String uploadPath;
     private String outputPath;
     
@@ -26,6 +28,7 @@ public class ConversionQueueProcessor implements ServletContextListener {
         
         requestDAO = new ConversionRequestDAO();
         fileDAO = new FileDAO();
+        workerManager = WorkerManager.getInstance();
         
         // Get paths from AppConfig (external storage)
         uploadPath = AppConfig.getUploadPath();
@@ -42,6 +45,7 @@ public class ConversionQueueProcessor implements ServletContextListener {
         processorThread.start();
         
         System.out.println("Conversion Queue Processor started successfully");
+        System.out.println("Mode: Distributed (will delegate to workers if available)");
     }
     
     @Override
@@ -70,7 +74,20 @@ public class ConversionQueueProcessor implements ServletContextListener {
                     ConversionRequest request = requestDAO.getNextPendingRequest();
                     
                     if (request != null) {
-                        processRequest(request);
+                        // Note: Request status already set to PROCESSING by getNextPendingRequest()
+                        
+                        // Try to delegate to worker first
+                        boolean delegated = workerManager.tryAssignJob(request);
+                        
+                        if (delegated) {
+                            System.out.println("→ Job #" + request.getRequestId() + 
+                                             " delegated to worker");
+                        } else {
+                            // No worker available, process locally
+                            System.out.println("⚙️ No worker available, processing locally: #" + 
+                                             request.getRequestId());
+                            processRequest(request);
+                        }
                     } else {
                         // No pending requests, sleep for a while
                         Thread.sleep(2000);
@@ -104,7 +121,11 @@ public class ConversionQueueProcessor implements ServletContextListener {
                 File wordFile = new File(uploadPath + File.separator + request.getSavedFilename());
                 
                 if (!wordFile.exists()) {
-                    throw new Exception("File không tồn tại: " + wordFile.getAbsolutePath());
+                    String errorMsg = "File không tồn tại: " + wordFile.getAbsolutePath();
+                    System.err.println("✗ " + errorMsg);
+                    // Immediately mark as failed to prevent infinite loop
+                    requestDAO.updateFailed(request.getRequestId(), errorMsg);
+                    return;
                 }
                 
                 // Generate PDF filename

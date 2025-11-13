@@ -1,9 +1,10 @@
-# 📄 Word to PDF Converter - Tomcat 9
+# 📄 Word to PDF Converter - Distributed System
 
-Ứng dụng web chuyển đổi file Word sang PDF với **xử lý bất đồng bộ**, **quản lý người dùng**, và **tự động dọn dẹp file** - sử dụng Java Servlet MVC cho **Tomcat 9.x**.
+Ứng dụng web chuyển đổi file Word sang PDF với **kiến trúc phân tán**, **xử lý bất đồng bộ**, **quản lý người dùng**, và **tự động dọn dẹp file** - sử dụng Java Servlet MVC cho **Tomcat 9.x**.
 
 ## ✨ Tính năng chính
 
+### Core Features
 - 🔐 **Xác thực người dùng** - Đăng nhập/đăng xuất an toàn
 - ⚡ **Xử lý bất đồng bộ** - Upload không cần chờ đợi, xử lý background queue
 - 📊 **Theo dõi tiến trình** - Xem trạng thái realtime của yêu cầu chuyển đổi
@@ -12,14 +13,109 @@
 - 🎨 **Giao diện hiện đại** - Responsive, drag & drop, progress indicator
 - 🔄 **Multi-user support** - Nhiều người dùng đồng thời, phân quyền theo user
 
+### Distributed System Features ⭐
+- 🌐 **Master-Worker Architecture** - Phân tán tải xử lý ra nhiều worker nodes
+- 🚀 **TCP File Transfer** - Truyền file qua mạng, không cần shared storage
+- 📡 **Dynamic Worker Pool** - Tự động phát hiện và cân bằng tải
+- 💪 **Fault Tolerance** - Xử lý locally nếu không có worker
+- 📊 **Worker Monitoring** - Dashboard theo dõi trạng thái workers realtime
+- 🔧 **Hot Deployment** - Thêm/xóa workers không cần restart server
+
+### Conversion Engine
+- 📚 **Docx4j + Apache FOP** - Chuyển đổi chất lượng cao
+- 🌏 **Unicode Support** - Hỗ trợ tiếng Việt và các ngôn ngữ đặc biệt
+- 🎨 **Layout Preservation** - Giữ nguyên định dạng, font, hình ảnh
+
+## 🏗️ Kiến trúc hệ thống
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Master Server                         │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │         Web Application (Tomcat)                 │   │
+│  │  - User Management & Authentication              │   │
+│  │  - File Upload & Download                        │   │
+│  │  - Request Queue Management                      │   │
+│  └──────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │         Master TCP Server (Port 7777)            │   │
+│  │  - Accept Worker Connections                     │   │
+│  │  - Distribute Jobs via TCP                       │   │
+│  │  - Receive Results from Workers                  │   │
+│  │  - Worker Pool Management                        │   │
+│  └──────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │      Local Converter (Fallback)                  │   │
+│  │  - Process jobs when no worker available         │   │
+│  └──────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+                           │
+            ┌──────────────┼──────────────┐
+            │              │              │
+            ▼              ▼              ▼
+      ┌─────────┐    ┌─────────┐    ┌─────────┐
+      │ Worker 1│    │ Worker 2│    │ Worker N│
+      │         │    │         │    │         │
+      │ Docx4j  │    │ Docx4j  │    │ Docx4j  │
+      └─────────┘    └─────────┘    └─────────┘
+```
+
+### TCP File Transfer Flow
+
+```
+[User] → Upload .docx
+    ↓
+[Master] → Read file → byte[]
+    ↓
+[Master] → Find available Worker
+    ↓
+[Master] → TCP Send: { requestId, fileData, fileSize }
+    ↓
+[Worker] → Receive → Save temp → Convert → Read PDF → byte[]
+    ↓
+[Worker] → TCP Send: { requestId, pdfData, fileSize }
+    ↓
+[Master] → Receive → Save to outputs/
+    ↓
+[User] ← Download PDF
+```
+
 ## 📋 Yêu cầu hệ thống
 
+### Master Server
 - **Java**: 8 trở lên
 - **Maven**: 3.6+
 - **Tomcat**: 9.x (Java EE 8 - javax.* namespace)
 - **MySQL**: 5.7+ hoặc 8.0+
 - **RAM**: Tối thiểu 2GB
 - **Disk**: 100MB+ cho ứng dụng + dung lượng file upload
+- **Network**: Port 8080 (HTTP) + Port 7777 (TCP Workers)
+
+### Workers (Optional - for distributed processing)
+- **Java**: 8+
+- **RAM**: 512MB+ per worker
+- **Network**: Kết nối được tới Master port 7777
+
+## 🛠️ Technology Stack
+
+**Backend:**
+- Java Servlet 4.0 (Java EE 8)
+- JDBC + MySQL
+- Docx4j 11.4.9 (Word processing)
+- Apache FOP 2.9 (PDF rendering)
+
+**Frontend:**
+- JSP + JSTL
+- Bootstrap 5
+- Vanilla JavaScript
+
+**Distributed System:**
+- Java Socket (TCP)
+- ObjectInputStream/ObjectOutputStream
+- Thread pools
+- Concurrent collections
 
 ## 🗄️ Cấu trúc Database
 

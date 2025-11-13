@@ -1,9 +1,8 @@
 package edu.dut.model.dao;
 
 import edu.dut.model.bean.UploadedFile;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import fr.opensagres.poi.xwpf.converter.pdf.PdfConverter;
-import fr.opensagres.poi.xwpf.converter.pdf.PdfOptions;
+import org.docx4j.Docx4J;
+import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -60,36 +59,22 @@ public class FileDAO {
      * Convert Word file to PDF file
      */
     public void convertWordToPdf(File wordFile, File pdfFile) throws Exception {
-        FileInputStream fis = null;
-        XWPFDocument document = null;
         OutputStream out = null;
         
         try {
-            fis = new FileInputStream(wordFile);
-            document = new XWPFDocument(fis);
+            // Load Word document
+            WordprocessingMLPackage wordMLPackage = WordprocessingMLPackage.load(wordFile);
+            
+            // Generate PDF directly
             out = new FileOutputStream(pdfFile);
+            Docx4J.toPDF(wordMLPackage, out);
             
-            PdfOptions options = PdfOptions.create();
-            PdfConverter.getInstance().convert(document, out, options);
-            
+        } catch (Exception e) {
+            throw new Exception("Conversion failed: " + e.getMessage(), e);
         } finally {
-            if (document != null) {
-                try {
-                    document.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
             if (out != null) {
                 try {
                     out.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            if (fis != null) {
-                try {
-                    fis.close();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

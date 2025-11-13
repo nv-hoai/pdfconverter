@@ -28,8 +28,8 @@ public class ConversionBO {
             throw new IllegalArgumentException("Chỉ chấp nhận file Word (.doc hoặc .docx)");
         }
         
-        if (fileSize > 10 * 1024 * 1024) { // 10MB
-            throw new IllegalArgumentException("File quá lớn. Kích thước tối đa: 10MB");
+        if (fileSize > 20 * 1024 * 1024) { // 20MB
+            throw new IllegalArgumentException("File quá lớn. Kích thước tối đa: 20MB");
         }
         
         // Save uploaded file

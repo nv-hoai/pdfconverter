@@ -2,6 +2,7 @@ package edu.dut.controller;
 
 import edu.dut.model.bean.User;
 import edu.dut.model.bo.ConversionRequestBO;
+import edu.dut.util.AppConfig;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -11,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -23,7 +23,6 @@ import java.io.InputStream;
 )
 public class UploadServlet extends HttpServlet {
     
-    private static final String UPLOAD_DIR = "uploads";
     private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
     private static final int MAX_REQUESTS_PER_USER = 50;
     
@@ -89,9 +88,8 @@ public class UploadServlet extends HttpServlet {
                 return;
             }
             
-            // Get paths
-            String applicationPath = getServletContext().getRealPath("");
-            String uploadPath = applicationPath + File.separator + UPLOAD_DIR;
+            // Get upload path from AppConfig (external storage)
+            String uploadPath = AppConfig.getUploadPath();
             
             // Ensure directory exists
             requestBO.ensureDirectoryExists(uploadPath);

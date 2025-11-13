@@ -133,21 +133,56 @@ public class ConversionRequestDAO {
         
         Connection conn = null;
         PreparedStatement stmt = null;
+        PreparedStatement updateStmt = null;
         ResultSet rs = null;
         
         try {
             conn = DatabaseUtil.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+            
+            // Select the next pending request
             stmt = conn.prepareStatement(sql);
             rs = stmt.executeQuery();
             
+            ConversionRequest request = null;
             if (rs.next()) {
-                return mapResultSet(rs);
+                request = mapResultSet(rs);
+                
+                // Immediately mark as PROCESSING to prevent duplicate processing
+                String updateSql = "UPDATE conversion_requests SET status = 'PROCESSING', started_at = NOW() WHERE request_id = ?";
+                updateStmt = conn.prepareStatement(updateSql);
+                updateStmt.setInt(1, request.getRequestId());
+                updateStmt.executeUpdate();
             }
             
-            return null;
+            conn.commit(); // Commit both SELECT and UPDATE
+            return request;
             
+        } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    // Ignore
+                }
+            }
+            throw e;
         } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true); // Restore auto-commit
+                } catch (SQLException e) {
+                    // Ignore
+                }
+            }
             DatabaseUtil.close(rs, stmt, conn);
+            if (updateStmt != null) {
+                try {
+                    updateStmt.close();
+                } catch (SQLException e) {
+                    // Ignore
+                }
+            }
         }
     }
     
