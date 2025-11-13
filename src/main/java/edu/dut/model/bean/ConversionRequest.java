@@ -19,7 +19,11 @@ public class ConversionRequest {
     private String username;
     
     public enum RequestStatus {
-        PENDING, PROCESSING, COMPLETED, FAILED
+        PENDING, 
+        PROCESSING, 
+        COMPLETED, 
+        DELETED,    // File đã bị xóa bởi cleanup task
+        FAILED
     }
     
     public ConversionRequest() {
@@ -127,6 +131,7 @@ public class ConversionRequest {
             case PENDING: return "Đang chờ";
             case PROCESSING: return "Đang xử lý";
             case COMPLETED: return "Hoàn thành";
+            case DELETED: return "Đã xóa";
             case FAILED: return "Thất bại";
             default: return status.toString();
         }

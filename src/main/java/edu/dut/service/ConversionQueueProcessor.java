@@ -3,6 +3,7 @@ package edu.dut.service;
 import edu.dut.model.bean.ConversionRequest;
 import edu.dut.model.dao.ConversionRequestDAO;
 import edu.dut.model.dao.FileDAO;
+import edu.dut.util.AppConfig;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -26,12 +27,11 @@ public class ConversionQueueProcessor implements ServletContextListener {
         requestDAO = new ConversionRequestDAO();
         fileDAO = new FileDAO();
         
-        // Get paths from context
-        String applicationPath = sce.getServletContext().getRealPath("");
-        uploadPath = applicationPath + File.separator + "uploads";
-        outputPath = applicationPath + File.separator + "outputs";
+        // Get paths from AppConfig (external storage)
+        uploadPath = AppConfig.getUploadPath();
+        outputPath = AppConfig.getOutputPath();
         
-        // Ensure directories exist
+        // Ensure directories exist (already done in AppConfig static initializer)
         fileDAO.ensureDirectoryExists(uploadPath);
         fileDAO.ensureDirectoryExists(outputPath);
         
@@ -116,13 +116,20 @@ public class ConversionQueueProcessor implements ServletContextListener {
                 // Convert
                 fileDAO.convertWordToPdf(wordFile, pdfFile);
                 
-                // Delete word file
-                wordFile.delete();
+                // Delete original Word file after successful conversion
+                if (wordFile.exists()) {
+                    boolean deleted = wordFile.delete();
+                    if (deleted) {
+                        System.out.println("✓ Đã xóa file gốc: " + request.getOriginalFilename());
+                    } else {
+                        System.err.println("⚠ Không thể xóa file gốc: " + request.getOriginalFilename());
+                    }
+                }
                 
                 // Update status to COMPLETED
                 requestDAO.updateCompleted(request.getRequestId(), pdfFileName);
                 
-                System.out.println("Successfully processed request #" + request.getRequestId());
+                System.out.println("✓ Successfully processed request #" + request.getRequestId());
                 
             } catch (Exception e) {
                 System.err.println("Failed to process request #" + request.getRequestId() + 

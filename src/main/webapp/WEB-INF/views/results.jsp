@@ -200,6 +200,11 @@
             color: #155724;
         }
 
+        .status-deleted {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
         .status-failed {
             background: #f8d7da;
             color: #721c24;
@@ -331,6 +336,8 @@
                                                class="btn-download">
                                                 📥 Tải về
                                             </a>
+                                        <% } else if (req.getStatus() == ConversionRequest.RequestStatus.DELETED) { %>
+                                            <span style="color: #6c757d;">🗑️ Đã xóa (quá 7 ngày)</span>
                                         <% } else if (req.getStatus() == ConversionRequest.RequestStatus.FAILED) { %>
                                             <span style="color: #dc3545;">❌ Thất bại</span>
                                         <% } else { %>

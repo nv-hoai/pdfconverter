@@ -23,7 +23,7 @@ CREATE TABLE conversion_requests (
     original_filename VARCHAR(255) NOT NULL,
     saved_filename VARCHAR(255) NOT NULL,
     file_size BIGINT,
-    status ENUM('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED') DEFAULT 'PENDING',
+    status ENUM('PENDING', 'PROCESSING', 'COMPLETED', 'DELETED', 'FAILED') DEFAULT 'PENDING',
     pdf_filename VARCHAR(255),
     error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -337,7 +337,10 @@ private static final int FILE_RETENTION_DAYS = 7; // Giữ file 7 ngày
 |-----------|---------|-------|
 | **Max file size** | 20 MB | Kích thước tối đa mỗi file upload |
 | **Max requests/user** | 50 | Số lượng yêu cầu tối đa mỗi user |
-| **File retention** | 7 ngày | File tự động xóa sau 7 ngày |
+| **File retention** | 7 ngày | PDF tự động xóa sau 7 ngày (file gốc xóa ngay sau convert) |
+| **Auto cleanup** | 24 giờ | Task tự động chạy mỗi ngày |
+| **Delete policy** | Sau convert | Xóa file Word gốc (.docx), giữ PDF cho user download nhiều lần |
+| **Session timeout** | 30 phút | Timeout phiên đăng nhập |
 | **Auto cleanup** | 24 giờ | Task tự động chạy mỗi ngày |
 | **Delete after download** | Ngay lập tức | Xóa file sau khi download thành công |
 | **Session timeout** | 30 phút | Timeout phiên đăng nhập |
@@ -448,6 +451,7 @@ ConversionQueueProcessor (daemon thread)
   → For each request:
       → Update status = PROCESSING
       → FileDAO.convertWordToPdf()
+      → Delete original Word file (.docx)
       → Update status = COMPLETED/FAILED
   → Repeat
 ```
@@ -457,9 +461,11 @@ ConversionQueueProcessor (daemon thread)
 User click Download → DownloadServlet
   → ConversionRequestDAO.getRequestById()
   → Validate (ownership, status = COMPLETED)
+  → Check file tồn tại
   → Read file từ outputs/
   → Stream file to response
-  → Delete file gốc + PDF
+  → File PDF vẫn giữ lại (cho phép download nhiều lần)
+  → File tự động xóa sau 7 ngày bởi FileCleanupTask
 ```
 
 ### 5. Luồng cleanup
@@ -467,8 +473,8 @@ User click Download → DownloadServlet
 FileCleanupTask (timer)
   → Run every 24 hours
   → ConversionRequestDAO.getOldRequests(7 days ago)
-  → For each old request:
-      → Delete physical files
+  → For each old request (COMPLETED/FAILED > 7 days):
+      → Delete PDF files
       → ConversionRequestDAO.deleteRequest()
 ```
 

@@ -2,6 +2,7 @@ package edu.dut.service;
 
 import edu.dut.model.bean.ConversionRequest;
 import edu.dut.model.dao.ConversionRequestDAO;
+import edu.dut.util.AppConfig;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -23,8 +24,9 @@ public class FileCleanupTask implements ServletContextListener {
     
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        String uploadPath = sce.getServletContext().getRealPath("") + File.separator + "uploads";
-        String outputPath = sce.getServletContext().getRealPath("") + File.separator + "outputs";
+        // Use external storage paths
+        String uploadPath = AppConfig.getUploadPath();
+        String outputPath = AppConfig.getOutputPath();
         
         timer = new Timer("FileCleanupTask", true);
         
@@ -62,12 +64,12 @@ public class FileCleanupTask implements ServletContextListener {
             List<ConversionRequest> oldRequests = dao.getOldRequests(cutoffDate);
             
             int deletedFiles = 0;
-            int deletedRecords = 0;
+            int updatedRecords = 0;
             
             for (ConversionRequest request : oldRequests) {
                 boolean filesDeleted = true;
                 
-                // Delete original file
+                // Delete original file (nếu vẫn còn)
                 if (request.getSavedFilename() != null) {
                     File originalFile = new File(uploadPath, request.getSavedFilename());
                     if (originalFile.exists()) {
@@ -91,18 +93,18 @@ public class FileCleanupTask implements ServletContextListener {
                     }
                 }
                 
-                // Delete database record if files were deleted successfully
+                // Mark as DELETED instead of deleting record (để user biết file đã bị xóa)
                 if (filesDeleted) {
-                    dao.deleteRequest(request.getRequestId());
-                    deletedRecords++;
+                    dao.updateStatus(request.getRequestId(), ConversionRequest.RequestStatus.DELETED);
+                    updatedRecords++;
                 }
             }
             
-            System.out.println("File cleanup completed: " + deletedFiles + " files and " + 
-                             deletedRecords + " records deleted");
+            System.out.println("✓ File cleanup completed: " + deletedFiles + " files deleted, " + 
+                             updatedRecords + " records marked as DELETED");
             
         } catch (SQLException e) {
-            System.err.println("Error during file cleanup: " + e.getMessage());
+            System.err.println("❌ Error during file cleanup: " + e.getMessage());
             e.printStackTrace();
         }
     }

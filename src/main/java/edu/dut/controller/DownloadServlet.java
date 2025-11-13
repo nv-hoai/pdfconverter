@@ -3,6 +3,7 @@ package edu.dut.controller;
 import edu.dut.model.bean.ConversionRequest;
 import edu.dut.model.bean.User;
 import edu.dut.model.bo.ConversionRequestBO;
+import edu.dut.util.AppConfig;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -17,8 +18,6 @@ import java.io.OutputStream;
 
 @WebServlet("/download")
 public class DownloadServlet extends HttpServlet {
-    
-    private static final String OUTPUT_DIR = "outputs";
     
     private ConversionRequestBO requestBO;
     
@@ -65,15 +64,21 @@ public class DownloadServlet extends HttpServlet {
                 return;
             }
             
+            // Check if deleted
+            if (convRequest.getStatus() == ConversionRequest.RequestStatus.DELETED) {
+                response.sendError(HttpServletResponse.SC_GONE, 
+                    "File đã bị xóa do quá 7 ngày. Vui lòng upload lại!");
+                return;
+            }
+            
             // Check if completed
             if (convRequest.getStatus() != ConversionRequest.RequestStatus.COMPLETED) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Yêu cầu chưa hoàn thành!");
                 return;
             }
-            
-            // Get PDF file
-            String applicationPath = getServletContext().getRealPath("");
-            String filePath = applicationPath + File.separator + OUTPUT_DIR + File.separator + convRequest.getPdfFilename();
+
+            // Get PDF file from external storage
+            String filePath = AppConfig.getOutputPath() + File.separator + convRequest.getPdfFilename();
             File downloadFile = new File(filePath);
             
             if (!downloadFile.exists()) {
@@ -111,17 +116,8 @@ public class DownloadServlet extends HttpServlet {
                 
                 outStream.flush(); // Flush before closing
                 
-                // Delete files after successful download
-                try {
-                    File originalFile = new File(applicationPath, "uploads" + File.separator + convRequest.getSavedFilename());
-                    if (originalFile.exists()) {
-                        originalFile.delete();
-                    }
-                    downloadFile.delete();
-                    System.out.println("Đã xóa file sau khi download: " + pdfName);
-                } catch (Exception delEx) {
-                    System.err.println("Không thể xóa file: " + delEx.getMessage());
-                }
+                // Note: Không xóa file sau download để user có thể download lại
+                // File sẽ tự động xóa sau 7 ngày bởi FileCleanupTask
                 
             } finally {
                 // Always close streams in finally block
@@ -137,6 +133,15 @@ public class DownloadServlet extends HttpServlet {
             
         } catch (NumberFormatException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã yêu cầu không hợp lệ!");
+            
+        } catch (java.io.FileNotFoundException e) {
+            // File không tồn tại (có thể đã bị xóa bởi cleanup task)
+            System.err.println("⚠ File không tồn tại cho request " + requestIdStr + ": " + e.getMessage());
+            if (!response.isCommitted()) {
+                response.sendError(HttpServletResponse.SC_GONE, 
+                    "File đã bị xóa hoặc không tồn tại!");
+            }
+            
         } catch (IOException e) {
             // Check if it's a client abort (connection closed by client)
             String errorMsg = e.getMessage();
@@ -149,15 +154,19 @@ public class DownloadServlet extends HttpServlet {
                  errorMsg.contains("Connection was aborted") ||
                  errorMsg.contains("Stream closed")))) {
                 // Client disconnected - this is normal, don't log as error
-                System.out.println("Client cancelled/disconnected download for request: " + requestIdStr);
+                // Không log gì cả để tránh spam
             } else {
+                // Lỗi IO thực sự
+                System.err.println("❌ IOException khi download request " + requestIdStr + ": " + e.getMessage());
                 e.printStackTrace();
                 if (!response.isCommitted()) {
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
                         "Lỗi khi tải file!");
                 }
             }
+            
         } catch (Exception e) {
+            System.err.println("❌ Exception khi download request " + requestIdStr + ": " + e.getMessage());
             e.printStackTrace();
             if (!response.isCommitted()) {
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
