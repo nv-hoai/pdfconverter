@@ -12,6 +12,7 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100),
+    role ENUM('ADMIN', 'USER') DEFAULT 'USER',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -36,10 +37,10 @@ CREATE TABLE conversion_requests (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert sample users (password: 123456)
-INSERT INTO users (username, password, full_name, email) VALUES
-('admin', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Administrator', 'admin@example.com'),
-('user1', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'User One', 'user1@example.com'),
-('user2', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'User Two', 'user2@example.com');
+INSERT INTO users (username, password, full_name, email, role) VALUES
+('admin', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'Administrator', 'admin@example.com', 'ADMIN'),
+('user1', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'User One', 'user1@example.com', 'USER'),
+('user2', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 'User Two', 'user2@example.com', 'USER');
 
 -- Note: Password is SHA-256 hash of "123456"
 -- To generate new password: echo -n "your_password" | sha256sum

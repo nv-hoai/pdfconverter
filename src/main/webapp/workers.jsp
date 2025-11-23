@@ -58,11 +58,11 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="<%= request.getContextPath() %>/home">
+            <a class="navbar-brand" href="<%= request.getContextPath() %>/upload">
                 <i class="bi bi-file-earmark-pdf"></i> PDF Converter
             </a>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="<%= request.getContextPath() %>/home">
+                <a class="nav-link" href="<%= request.getContextPath() %>/upload">
                     <i class="bi bi-house"></i> Home
                 </a>
                 <a class="nav-link active" href="<%= request.getContextPath() %>/admin/workers">

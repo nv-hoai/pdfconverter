@@ -10,7 +10,7 @@ public class UserDAO {
     
     public User authenticate(String username, String password) throws SQLException {
         String hashedPassword = HashUtil.sha256(password);
-        String sql = "SELECT user_id, username, full_name, email, created_at " +
+        String sql = "SELECT user_id, username, full_name, email, role, created_at " +
                      "FROM users WHERE username = ? AND password = ?";
         
         Connection conn = null;
@@ -31,6 +31,7 @@ public class UserDAO {
                 user.setUsername(rs.getString("username"));
                 user.setFullName(rs.getString("full_name"));
                 user.setEmail(rs.getString("email"));
+                user.setRole(rs.getString("role"));
                 user.setCreatedAt(rs.getTimestamp("created_at"));
                 return user;
             }
@@ -43,7 +44,7 @@ public class UserDAO {
     }
     
     public User getUserById(int userId) throws SQLException {
-        String sql = "SELECT user_id, username, full_name, email, created_at " +
+        String sql = "SELECT user_id, username, full_name, email, role, created_at " +
                      "FROM users WHERE user_id = ?";
         
         Connection conn = null;
@@ -63,6 +64,7 @@ public class UserDAO {
                 user.setUsername(rs.getString("username"));
                 user.setFullName(rs.getString("full_name"));
                 user.setEmail(rs.getString("email"));
+                user.setRole(rs.getString("role"));
                 user.setCreatedAt(rs.getTimestamp("created_at"));
                 return user;
             }

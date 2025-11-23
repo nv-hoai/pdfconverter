@@ -303,6 +303,9 @@
                 <span><%= user.getFullName() %></span>
             </div>
             <a href="<%= request.getContextPath() %>/results" class="nav-btn btn-results">📋 Kết quả</a>
+            <% if (user.isAdmin()) { %>
+            <a href="<%= request.getContextPath() %>/admin/workers" class="nav-btn" style="background: #17a2b8; color: white;">🖥️ Workers</a>
+            <% } %>
             <form method="post" action="<%= request.getContextPath() %>/logout" style="display: inline;">
                 <button type="submit" class="nav-btn btn-logout">🚪 Đăng xuất</button>
             </form>
