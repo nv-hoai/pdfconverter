@@ -2,6 +2,7 @@ package edu.dut.controller;
 
 import edu.dut.model.bean.User;
 import edu.dut.model.bo.ConversionRequestBO;
+import edu.dut.model.dao.FileDAO;
 import edu.dut.util.AppConfig;
 
 import javax.servlet.ServletException;
@@ -27,11 +28,13 @@ public class UploadServlet extends HttpServlet {
     private static final int MAX_REQUESTS_PER_USER = 50;
     
     private ConversionRequestBO requestBO;
+    private FileDAO fileDAO;
     
     @Override
     public void init() throws ServletException {
         super.init();
         requestBO = new ConversionRequestBO();
+        fileDAO = new FileDAO();
     }
     
     @Override
@@ -71,9 +74,9 @@ public class UploadServlet extends HttpServlet {
         }
         
         // Validate file extension
-        if (!fileName.toLowerCase().endsWith(".doc") && !fileName.toLowerCase().endsWith(".docx")) {
+        if (!fileName.toLowerCase().endsWith(".docx")) {
             request.setAttribute("messageType", "error");
-            request.setAttribute("message", "Chỉ hỗ trợ file Word (.doc, .docx)");
+            request.setAttribute("message", "Chỉ hỗ trợ file Word (.docx)");
             request.getRequestDispatcher("/WEB-INF/views/upload.jsp").forward(request, response);
             return;
         }
@@ -92,7 +95,7 @@ public class UploadServlet extends HttpServlet {
             String uploadPath = AppConfig.getUploadPath();
             
             // Ensure directory exists
-            requestBO.ensureDirectoryExists(uploadPath);
+            fileDAO.ensureDirectoryExists(uploadPath);
             
             // Submit request to queue
             InputStream inputStream = filePart.getInputStream();

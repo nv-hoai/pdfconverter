@@ -2,7 +2,6 @@ package edu.dut.controller;
 
 import edu.dut.distributed.master.WorkerManager;
 import edu.dut.distributed.model.WorkerNode;
-import edu.dut.model.bean.User;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -35,11 +34,6 @@ public class WorkerMonitorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-        
-        User user = (User) session.getAttribute("user");
-        
-        // Check admin (optional - you can add admin role check here)
-        // For now, any logged-in user can view
         
         // Get worker statistics
         Map<String, Object> stats = workerManager.getStatistics();

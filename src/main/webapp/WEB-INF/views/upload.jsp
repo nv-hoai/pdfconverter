@@ -22,7 +22,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f7fa;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -197,7 +197,7 @@
         .btn-submit {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #667eea;
             color: white;
             border: none;
             border-radius: 10px;
@@ -312,7 +312,7 @@
     <div class="container">
         <div class="upload-card">
             <h1>Upload File Word</h1>
-            <p class="subtitle">Gửi yêu cầu chuyển đổi file .doc hoặc .docx sang PDF</p>
+            <p class="subtitle">Gửi yêu cầu chuyển đổi file .docx sang PDF</p>
             
             <div class="message info">
                 ℹ️ <strong>Giới hạn:</strong> File tối đa 20MB | Tối đa 50 yêu cầu/tài khoản | File tự động xóa sau 7 ngày
@@ -332,8 +332,8 @@
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📤</div>
                     <div class="upload-text">Kéo thả file vào đây</div>
-                    <div class="upload-hint">hoặc nhấn để chọn file (.doc, .docx)</div>
-                    <input type="file" name="file" id="fileInput" accept=".doc,.docx" required>
+                    <div class="upload-hint">hoặc nhấn để chọn file (.docx)</div>
+                    <input type="file" name="file" id="fileInput" accept=".docx" required>
                 </div>
 
                 <div class="file-info" id="fileInfo">
@@ -389,11 +389,11 @@
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 const file = files[0];
-                if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+                if (file.name.endsWith('.docx')) {
                     fileInput.files = files;
                     displayFileInfo(file);
                 } else {
-                    alert('Vui lòng chọn file Word (.doc hoặc .docx)');
+                    alert('Vui lòng chọn file Word (.docx)');
                 }
             }
         });

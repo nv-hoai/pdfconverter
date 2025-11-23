@@ -20,15 +20,6 @@ public class ConversionRequestBO {
     
     public int submitRequest(int userId, InputStream inputStream, String originalFileName, 
                             long fileSize, String uploadPath) throws Exception {
-        // Validate file
-        if (!isValidWordFile(originalFileName)) {
-            throw new IllegalArgumentException("Chỉ chấp nhận file Word (.doc hoặc .docx)");
-        }
-        
-        if (fileSize > 20 * 1024 * 1024) { // 20MB
-            throw new IllegalArgumentException("File quá lớn. Kích thước tối đa: 20MB");
-        }
-        
         // Save uploaded file
         UploadedFile uploadedFile = fileDAO.saveUploadedFile(inputStream, originalFileName, uploadPath);
         
@@ -53,17 +44,5 @@ public class ConversionRequestBO {
     
     public int countUserRequests(int userId) throws SQLException {
         return requestDAO.countRequestsByUser(userId);
-    }
-    
-    private boolean isValidWordFile(String fileName) {
-        if (fileName == null || fileName.isEmpty()) {
-            return false;
-        }
-        String lowerFileName = fileName.toLowerCase();
-        return lowerFileName.endsWith(".doc") || lowerFileName.endsWith(".docx");
-    }
-    
-    public void ensureDirectoryExists(String path) {
-        fileDAO.ensureDirectoryExists(path);
     }
 }
